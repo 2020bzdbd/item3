@@ -9,6 +9,7 @@
 #include<string>
 #include<fstream>
 #include<sstream>
+#include<string>
 #include<ctime>
 #include<map>
 #include<thread>

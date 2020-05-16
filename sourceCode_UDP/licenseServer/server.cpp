@@ -49,13 +49,26 @@ void server::receieveFromClient()
 
 messageData::messageData(std::string m, sockaddr_in a):msg(m),addr(a){}
 
-clientData::clientData(sockaddr_in Addr, std::string name="",
-	std::string pwd="", std::string seqNum="",std::thread*thr=nullptr) {
+clientData::clientData()
+{
+	clientAddr = sockaddr_in();
+	username = "";
+	password = "";
+	seqNum = "";
+	corrThread = nullptr;
+	state = false;
+}
+
+clientData::clientData(sockaddr_in&Addr, std::string name="",
+	std::string pwd="", std::string seqNum="",std::thread*thr=nullptr,bool st) {
 	clientAddr = Addr;
 	username = name;
 	password = pwd;
 	this->seqNum = seqNum;
 	corrThread = thr;
+	state = st;
 };
 
 updateTuple::updateTuple(sockaddr_in addr,bool flag):clientAddr(addr),statusFlag(flag){};
+
+
