@@ -9,7 +9,6 @@ void server::init()
 {
 	//InitWinsock();
 	WSADATA wsaData;
-	int iErrorCode;
 	int port = 1234;						//本机端口
 	std::string serverip = "192.168.1.109";	//本机IP
 
@@ -40,9 +39,9 @@ void server::receieveFromClient()
 	while (true) {
 		char buffer[128] = "\0";
 		sockaddr_in clientAddr;
-		int msgLen;
+		int msgLen=sizeof(clientAddr);
 		if (recvfrom(socket1, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddr,&msgLen) != SOCKET_ERROR) {
-			msgBuffer.push(messageData(std::string(buffer).substr(0, msgLen), clientAddr));
+			msgBuffer.push(messageData(std::string(buffer), clientAddr));
 		}
 	}
 }
@@ -56,17 +55,15 @@ clientData::clientData()
 	password = "";
 	seqNum = "";
 	corrThread = nullptr;
-	state = false;
 }
 
 clientData::clientData(sockaddr_in&Addr, std::string name="",
-	std::string pwd="", std::string seqNum="",std::thread*thr=nullptr,bool st) {
+	std::string pwd="", std::string seqNum="",std::thread*thr=nullptr) {
 	clientAddr = Addr;
 	username = name;
 	password = pwd;
 	this->seqNum = seqNum;
 	corrThread = thr;
-	state = st;
 };
 
 updateTuple::updateTuple(sockaddr_in addr,bool flag):clientAddr(addr),statusFlag(flag){};

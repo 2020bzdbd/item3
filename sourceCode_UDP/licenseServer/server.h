@@ -15,10 +15,9 @@ struct clientData {
 	std::string password;
 	std::string seqNum;
 	std::thread* corrThread;
-	bool state;
 	clientData();
 	clientData(sockaddr_in&Addr, std::string name,
-		std::string pwd, std::string seqNum, std::thread* thr,bool st);
+		std::string pwd, std::string seqNum, std::thread* thr);
 };
 
 //更新队列的元组
