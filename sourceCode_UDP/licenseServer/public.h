@@ -12,11 +12,14 @@
 #include<string>
 #include<ctime>
 #include<map>
+#include<iomanip>
 #include<thread>
 #include<windows.h>
 #include<ws2tcpip.h>//定义socklen_t
 #include <queue>
 #pragma comment(lib, "WS2_32")  // 链接到WS2_32.lib
 #define CK_MSG WM_USER+100
+
+using namespace std;
 
 #endif

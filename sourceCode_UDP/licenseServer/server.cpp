@@ -9,8 +9,9 @@ void server::init()
 {
 	//InitWinsock();
 	WSADATA wsaData;
-	int port = 1234;						//本机端口
-	std::string serverip = "192.168.1.109";	//本机IP
+	int port;						//本机端口
+	cout << "请输入所使用的端口号：" << endl;
+	cin >> port;
 
 	if (WSAStartup(MAKEWORD(2, 1), &wsaData)) //调用Windows Sockets DLL
 	{
@@ -24,7 +25,8 @@ void server::init()
 	serverAddr.sin_port = htons(port);				///监听端口
 	serverAddr.sin_addr.s_addr = htonl(INADDR_ANY); ///IP地址设定为本机IP
 	socket1 = socket(AF_INET, SOCK_DGRAM, 0);
-	bind(socket1, (struct sockaddr*) & serverAddr, sizeof(serverAddr));//将那个结构体绑定到当前的套接字绑定地址以及端口
+
+	::bind(socket1, (struct sockaddr*) & serverAddr, sizeof(serverAddr));//将那个结构体绑定到当前的套接字绑定地址以及端口
 
 }
 
@@ -43,6 +45,10 @@ void server::receieveFromClient()
 		if (recvfrom(socket1, buffer, sizeof(buffer), 0, (struct sockaddr*)&clientAddr,&msgLen) != SOCKET_ERROR) {
 			msgBuffer.push(messageData(std::string(buffer), clientAddr));
 		}
+		else
+		{
+			cout << GetLastError();
+		}
 	}
 }
 
@@ -57,8 +63,8 @@ clientData::clientData()
 	corrThread = nullptr;
 }
 
-clientData::clientData(sockaddr_in&Addr, std::string name="",
-	std::string pwd="", std::string seqNum="",std::thread*thr=nullptr) {
+clientData::clientData(sockaddr_in Addr, std::string name,
+	std::string pwd, std::string seqNum,std::thread*thr=nullptr) {
 	clientAddr = Addr;
 	username = name;
 	password = pwd;

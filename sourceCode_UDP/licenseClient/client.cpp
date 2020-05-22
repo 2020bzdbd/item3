@@ -1,10 +1,35 @@
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "client.h"
+
+//将输入的信息根据空格进行分割
+vector<string> client::split(char *str)
+{
+	vector<string> elems;
+	const char *delim = " ";
+	char *s = strtok(str, delim);
+	while (s != NULL)
+	{
+		elems.push_back(s);
+		s = strtok(NULL, delim);
+	}
+	return elems;
+}
 
 void client::init()
 {
 	WSADATA wsaData;
-	int port = 1234;						//接入端口
-	std::string serverIp = "192.168.1.109";//服务器IP
+	int port ;						//接入端口
+	std::string serverIp ;//服务器IP
+	cout << "按照[ip] [端口号]的格式输入，中间用空格隔开且不加中括号：" << endl;
+	string input;
+	getline(cin, input, '\n');
+	vector<string> info = split((char*)input.c_str());
+	serverIp = info[0];
+	stringstream ss(info[1]);
+	ss >> port;
+
 
 	if (WSAStartup(MAKEWORD(2, 1), &wsaData)) //调用Windows Sockets DLL
 	{
@@ -32,7 +57,8 @@ void client::sendToServer(std::string msg)
 
 std::string client::receieveFromServer()
 {
-	while (true) {
+	while (true) 
+	{
 		char buffer[128] = "\0";
 		sockaddr_in ServerAddr;
 		int msgLen=sizeof(ServerAddr);

@@ -9,5 +9,6 @@ public:
 	client();
 	void sendToServer(std::string msg);
 	std::string receieveFromServer();
+	vector<string> split(char *str);
 };
 

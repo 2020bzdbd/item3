@@ -1,6 +1,33 @@
 #pragma once
 #include"public.h"
 
+//许可证类
+class license
+{
+public:
+	string seqNum;
+	string username;
+	string password;
+	int maxNum;//该许可证最大使用人数
+	int currentNum;//当前使用该许可证的人数
+	bool Is_First_Use;
+	vector<string> Users;//当前正在使用的用户的IP和端口号已经登录时间
+
+public:
+	license()
+	{
+		seqNum = "";
+		username = "";
+		password = "";
+		maxNum = 0;
+		currentNum = 0;
+		Is_First_Use = true;
+	}
+	void readLicenceData(vector<license> &AllLicense);
+	void GetFiles(string path, vector<string>& files, vector<int>& is_file_packet, int hierarchy);
+	void ShowLicenseInfo(vector<license> &AllLicense);
+};
+
 //储存从客户端接收的信息，包含消息和地址
 struct messageData {
 	std::string msg;
@@ -16,7 +43,7 @@ struct clientData {
 	std::string seqNum;
 	std::thread* corrThread;
 	clientData();
-	clientData(sockaddr_in&Addr, std::string name,
+	clientData(sockaddr_in Addr, std::string name,
 		std::string pwd, std::string seqNum, std::thread* thr);
 };
 
