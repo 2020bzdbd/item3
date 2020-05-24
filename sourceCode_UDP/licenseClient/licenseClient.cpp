@@ -2,16 +2,29 @@
 #include"client.h"
 client myClient;
 int LogOut = 0;//看是否退出登录，如果退出则为-1
-
+bool recvState = false;
 clock_t time_waiting_permit = clock();//上一次得到授权的时间
 bool is_ok = true;//程序是否正常运行，如果遇到被踢下线的情况，会设为false，全部线程结束
+
+void sendLoginMsg(std::string username, std::string password, std::string seqNum) {
+	clock_t time_start = clock();
+	while (recvState==false) {
+		if ((clock() - time_start) / (double)CLOCKS_PER_SEC >= 2) {
+			time_start = clock();
+			myClient.sendToServer("login " + username + " " + password + " " + seqNum);
+		}
+	}
+	return;
+}
 
 //允许登录返回1，登录信息错误返回0，已达使用人数上限返回2
 //若该序列号为第一次使用，且用户在输入登录信息时没有输入序列号则返回3
 int login(std::string username, std::string password, std::string seqNum) {
 	//向服务器发送信息登录
-	myClient.sendToServer("login " + username + " " + password + " " + seqNum);
+	thread tr(sendLoginMsg, username, password, seqNum);
 	std::string reply = myClient.receieveFromServer();
+	recvState = true;
+	tr.join();
 	if (reply == "permit")
 		return 1;
 	else if (reply == "limited")
@@ -134,6 +147,8 @@ void clientlistenr()
 			cout << "存在bug，报告状态时收到了意外的返回内容" << endl;
 		if (is_ok == false)
 			exit(-1);
+		if (LogOut == -1)
+			return;
 	}
 
 }
@@ -186,6 +201,7 @@ int main()
 		}
 		cout << "成功退出" << endl;
 		LogOut = -1;
+		listener_thread.join();
 	}
 	return 0;
 }

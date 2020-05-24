@@ -37,7 +37,7 @@ void connectClient(sockaddr_in clientAddr) {
 			if (msg.message == CK_MSG) {
 				//重置计时器
 				time_start = clock();
-				myServer.sendToClient(&clientAddr,"permit");
+				myServer.sendToClient(&clientAddr, "permit");
 			}
 
 			if (msg.message == WM_QUIT) {
@@ -104,7 +104,7 @@ vector<string> split(string str)
 }
 
 //读取所有的许可证信息和黑名单信息
-void license::readLicenceData(vector<license> &AllLicense) 
+void license::readLicenceData(vector<license>& AllLicense)
 {
 	//读取黑名单
 	forbiddenIPs.clear();
@@ -131,7 +131,7 @@ void license::readLicenceData(vector<license> &AllLicense)
 	{
 		string last_username;
 		string last_user_password;
-		for (int i = 1;i < files.size();i++)
+		for (int i = 1; i < files.size(); i++)
 		{
 			int pos = 0;
 			pos = files[i].rfind("/");
@@ -154,7 +154,7 @@ void license::readLicenceData(vector<license> &AllLicense)
 				licen.seqNum = str;
 				licen.username = last_username;
 				licen.password = last_user_password;
-				
+
 				i++;
 				ifstream fin;
 				fin.open(files[i], ios::in);
@@ -166,22 +166,22 @@ void license::readLicenceData(vector<license> &AllLicense)
 				licen.maxNum = num;
 				string current;
 				getline(fin, current);//第二行记录是否是第一次使用
-				if (current == "TRUE")licen.Is_First_Use =true;
-				else licen.Is_First_Use=false;
+				if (current == "TRUE")licen.Is_First_Use = true;
+				else licen.Is_First_Use = false;
 				getline(fin, current);//第三行记录当前使用人数
 				num = StrToNum(current);
 				licen.currentNum = num;
 				//存取使用的客户的IP+端口号
 				if (num > 0)
 				{
-					for (int j = 0;j < num;j++)
+					for (int j = 0; j < num; j++)
 					{
 						getline(fin, current);
 						licen.Users.push_back(current);
 					}
 
 					//将每个IP和端口号分割开来
-					for (int j = 0;j < licen.Users.size();j++)
+					for (int j = 0; j < licen.Users.size(); j++)
 					{
 						vector<string> userinfo = split((char*)licen.Users[j].c_str());
 						string IP = userinfo[0];
@@ -189,11 +189,11 @@ void license::readLicenceData(vector<license> &AllLicense)
 
 						//将登录用户的信息存到clientInfo，并分别创建线程进行连接
 						sockaddr_in addr;
-						addr.sin_family= AF_INET;
+						addr.sin_family = AF_INET;
 						addr.sin_addr.s_addr = inet_addr(IP.c_str());
 						addr.sin_port = htons(atoi(port.c_str()));
 						std::thread* thr = new std::thread(connectClient, addr);
-						clientData data(addr,licen.username,licen.password,licen.seqNum,thr);
+						clientData data(addr, licen.username, licen.password, licen.seqNum, thr);
 
 					}
 				}
@@ -205,12 +205,12 @@ void license::readLicenceData(vector<license> &AllLicense)
 }
 
 //输出许可证的所有信息
-void license::ShowLicenseInfo(vector<license> &AllLicense)
+void license::ShowLicenseInfo(vector<license>& AllLicense)
 {
 	if (AllLicense.size() > 0)
 	{
 		cout << endl << "※※※※※※※※※※※※※※※※※※※※※※※※※※";
-		for (int i = 0;i < AllLicense.size();i++)
+		for (int i = 0; i < AllLicense.size(); i++)
 		{
 			cout << endl << "序列号" << AllLicense[i].seqNum << "相关信息如下：" << endl;
 			cout << "该许可证用户：" << AllLicense[i].username;
@@ -222,7 +222,7 @@ void license::ShowLicenseInfo(vector<license> &AllLicense)
 			if (AllLicense[i].currentNum > 0)
 			{
 				cout << "使用该许可证的客户端的IP和端口号以及登录时间如下：" << endl;
-				for (int j = 0;j < AllLicense[i].Users.size();j++)
+				for (int j = 0; j < AllLicense[i].Users.size(); j++)
 				{
 					if (j == AllLicense[i].Users.size() - 1)cout << AllLicense[i].Users[j];
 					else cout << AllLicense[i].Users[j] << endl;
@@ -284,14 +284,14 @@ void license::GetFiles(string path, vector<string>& files, vector<int>& is_file_
 //允许登录返回1，登录信息错误返回0，已达使用人数上限返回2
 //若该序列号为第一次使用，且用户在输入登录信息时没有输入序列号则返回3
 //若返回4，则表示该IP被拉入黑名单，不可登录
-int checkInfo(std::string name,std::string pwd,std::string &seqnum)
+int checkInfo(std::string name, std::string pwd, std::string& seqnum)
 {
 	int result = -1;//检验登录信息的结果
 	//用户输入了序列号
 	if (seqnum != "")
 	{
 		int i = 0;
-		for (;i < AllLicense.size();i++)
+		for (; i < AllLicense.size(); i++)
 		{
 			license licen = AllLicense[i];
 			if (licen.username == name && licen.password == pwd && licen.seqNum == seqnum)
@@ -309,7 +309,7 @@ int checkInfo(std::string name,std::string pwd,std::string &seqnum)
 	{
 		int i = 0;
 		int flag = 0;//记录用户输入的用户名和密码是否匹配，等于2表示匹配但人数达到上限
-		for (;i < AllLicense.size();i++)
+		for (; i < AllLicense.size(); i++)
 		{
 			license licen = AllLicense[i];
 			if (licen.username == name && licen.password == pwd)
@@ -328,7 +328,7 @@ int checkInfo(std::string name,std::string pwd,std::string &seqnum)
 			else if (licen.username == name && licen.password != pwd)
 				return 0;
 		}
-		if (flag == 1 && i == AllLicense.size())return 3;	
+		if (flag == 1 && i == AllLicense.size())return 3;
 		if (flag == 2 && i == AllLicense.size())return 2;
 	}
 }
@@ -345,7 +345,7 @@ void UpdateLicenseFile(int ser_count)
 	fout << "FALSE" << endl;
 	fout << AllLicense[ser_count].currentNum << endl;
 	if (AllLicense[ser_count].Users.size() == 0)fout << "No user";
-	for (int j = 0;j < AllLicense[ser_count].Users.size();j++)
+	for (int j = 0; j < AllLicense[ser_count].Users.size(); j++)
 	{
 		if (j == AllLicense[ser_count].Users.size() - 1)fout << AllLicense[ser_count].Users[j];
 		else fout << AllLicense[ser_count].Users[j] << endl;
@@ -353,7 +353,7 @@ void UpdateLicenseFile(int ser_count)
 	fout.close();
 }
 
-void updateLicence(updateTuple tuple) 
+void updateLicence(updateTuple tuple)
 {
 	//获取字符串形式的ip+端口号
 	stringstream ss;
@@ -369,7 +369,7 @@ void updateLicence(updateTuple tuple)
 	else state = "logout";
 
 	cout << "user " << inet_ntoa(tuple.clientAddr.sin_addr) << " ";
-	cout << ntohs(tuple.clientAddr.sin_port) << " " << time <<" " << state << std::endl;
+	cout << ntohs(tuple.clientAddr.sin_port) << " " << time << " " << state << std::endl;
 
 	string seqnum = clientInfo[tuple.clientAddr].seqNum;//进行更新的序列号
 
@@ -378,7 +378,7 @@ void updateLicence(updateTuple tuple)
 	{
 		//对存储许可证信息的容器进行更新
 		int i = 0;
-		for (;i < AllLicense.size();i++)
+		for (; i < AllLicense.size(); i++)
 		{
 			if (seqnum == AllLicense[i].seqNum)
 			{
@@ -389,20 +389,20 @@ void updateLicence(updateTuple tuple)
 			}
 		}
 		//对许可证文件进行更新
-		UpdateLicenseFile(i);	
+		UpdateLicenseFile(i);
 	}
 	else
 	{
 		cout << "退出后进行更新序列号" << endl;
 		//对存储许可证信息的容器进行更新
 		int i = 0, j = 0;
-		for (;i < AllLicense.size();i++)
+		for (; i < AllLicense.size(); i++)
 		{
 			if (seqnum == AllLicense[i].seqNum)
 			{
-				AllLicense[i].currentNum--;		
-				for (;j < AllLicense[i].Users.size();j++)
-				{					
+				AllLicense[i].currentNum--;
+				for (; j < AllLicense[i].Users.size(); j++)
+				{
 					int pos = str.rfind('+');
 					string s1 = str.substr(0, pos);
 					pos = AllLicense[i].Users[j].rfind('+');
@@ -438,7 +438,7 @@ void handleMessage(messageData data) {
 	ss >> ins;
 
 	//三类消息指令,login登录,check定时汇报,quit退出
-	if (ins == "login") 
+	if (ins == "login")
 	{
 		std::string username, password, seqNum;	//用户名，密码，序列号
 		ss >> username >> password >> seqNum;
@@ -448,7 +448,7 @@ void handleMessage(messageData data) {
 		bool forbidOr = false;//不在黑名单为false
 		//先检查该客户端的IP是否在黑名单内
 		string thisIP = inet_ntoa(data.addr.sin_addr);
-		for (int i = 0;i < forbiddenIPs.size();i++)
+		for (int i = 0; i < forbiddenIPs.size(); i++)
 		{
 			if (thisIP == forbiddenIPs[i])
 			{
@@ -519,12 +519,13 @@ void readcmd()
 		clock_t time_end = clock();
 		if ((time_end - time_start) / (double)CLOCKS_PER_SEC >= 10)
 		{
-			fstream f(CMDFILEPATH,ios::in);
+			fstream f(CMDFILEPATH, ios::in);
 			while (!f.eof())//读取信息
 			{
 				string temp;
 				f >> temp;
-				cmdQueue.push(temp);
+				if (temp != "")
+					cmdQueue.push(temp);
 			}
 			f.close();
 			f.open(CMDFILEPATH, ios::out);
@@ -594,7 +595,7 @@ int main()
 					addr.sin_port = htons(atoi(port.c_str()));
 					addr.sin_addr.s_addr = inet_addr(ip.c_str());
 					addr.sin_family = AF_INET;
-					myServer.sendToClient(&addr,"forbid");
+					myServer.sendToClient(&addr, "forbid");
 					std::thread* tr = clientInfo.at(addr).corrThread;
 					DWORD tid = GetThreadId(tr->native_handle());
 					while (!PostThreadMessage(tid, WM_QUIT, 0, 0));
@@ -604,7 +605,7 @@ int main()
 				{
 					//解禁某IP
 					string ip = cmd_items[1];
-					ofstream out(ForbidFILEPATH,ios::out);
+					ofstream out(ForbidFILEPATH, ios::out);
 					for (auto it = forbiddenIPs.begin(); it != forbiddenIPs.end(); it++) {
 						if (*it != ip)
 							out << ip << endl;
