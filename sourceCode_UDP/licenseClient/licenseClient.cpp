@@ -3,6 +3,9 @@
 client myClient;
 int LogOut = 0;//看是否退出登录，如果退出则为-1
 
+clock_t time_waiting_permit = clock();//上一次得到授权的时间
+bool is_ok = true;//程序是否正常运行，如果遇到被踢下线的情况，会设为false，全部线程结束
+
 //允许登录返回1，登录信息错误返回0，已达使用人数上限返回2
 //若该序列号为第一次使用，且用户在输入登录信息时没有输入序列号则返回3
 int login(std::string username, std::string password, std::string seqNum) {
@@ -27,9 +30,17 @@ void check()
 	clock_t time_start = clock();
 	while (true)
 	{
+		if (!is_ok)
+			return;
+		if ((time_waiting_permit - time_start) / (double)CLOCKS_PER_SEC >= 1800)//长时间没收到服务器授权，认为服务器崩溃
+		{
+			cout << "服务器长时间没授权，服务器崩溃";
+			is_ok = false;
+		}
+		
 		if (LogOut == -1)break;
 		clock_t time_end = clock();
-		if ((time_end - time_start) / (double)CLOCKS_PER_SEC == 180)
+		if ((time_end - time_start) / (double)CLOCKS_PER_SEC >= 180)
 		{
 			myClient.sendToServer("check");
 			time_start = clock();
@@ -103,6 +114,30 @@ void checkInput(string &username, string &password, string &seqNum)
 	}
 }
 
+void clientlistenr()
+{
+	while (true)
+	{
+		if (!is_ok)
+			return;
+		std::string reply = myClient.receieveFromServer();//接受返回
+		if (reply == "permit")
+		{
+			time_waiting_permit = clock();//刷新持续时间
+		}
+		else if (reply == "forbid")
+		{
+			cout << "您被强制下线" << endl;
+			is_ok = false;
+		}
+		else
+			cout << "存在bug，报告状态时收到了意外的返回内容" << endl;
+		if (is_ok == false)
+			exit(-1);
+	}
+
+}
+
 int main()
 {
 	std::string username, password, seqNum;
@@ -137,6 +172,7 @@ int main()
 
 		std::thread check_thread(check);
 		check_thread.detach();//将子线程与主线程分离
+		std::thread listener_thread(clientlistenr);//监听服务器返回的信息，并通过设置参数is_ok确定程序是否被结束
 
 		while (true) {
 			printf("输入quit退出\n");

@@ -3,17 +3,22 @@
 
 #include"public.h"
 #include"server.h"
+#include<fstream>
+using namespace std;
 server myServer;
 license myLicense;
 std::queue<updateTuple> updateBuffer;	//暂存待进行的更新
 std::map<sockaddr_in, clientData> clientInfo;		//使用客户端地址查找客户端信息
 vector<license> AllLicense;//存储当前服务器所有的许可证信息
 vector<string> forbiddenIPs;//存储被拉入黑名单的IP地址，不可登录
+queue<string> cmdQueue;//命令队列，从文件中读取命令，读取完以后清空
 
 //各文件路径的宏定义
 #define FILEPATH "license"
 #define HistoryFILEPATH "history.txt"
 #define ForbidFILEPATH "forbid.txt"
+#define CMDFILEPATH "cmd.txt"
+//#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 string sourcePath = FILEPATH;
 
@@ -32,6 +37,7 @@ void connectClient(sockaddr_in clientAddr) {
 			if (msg.message == CK_MSG) {
 				//重置计时器
 				time_start = clock();
+				myServer.sendToClient(&clientAddr,"permit");
 			}
 
 			if (msg.message == WM_QUIT) {
@@ -503,12 +509,55 @@ void handleMessage(messageData data) {
 	else myServer.sendToClient(&(data.addr), "请输入正确的指令。");
 }
 
+
+//读取命令，放在另一个线程使用
+void readcmd()
+{
+	clock_t time_start = clock();
+	while (true)
+	{
+		clock_t time_end = clock();
+		if ((time_end - time_start) / (double)CLOCKS_PER_SEC >= 10)
+		{
+			fstream f(CMDFILEPATH,ios::in);
+			while (!f.eof())//读取信息
+			{
+				string temp;
+				f >> temp;
+				cmdQueue.push(temp);
+			}
+			f.close();
+			f.open(CMDFILEPATH, ios::out);
+			f.close();//清空
+			time_start = clock();
+		}
+	}
+}
+
+vector<string> getCmdItems(string cmd_str)
+{
+	vector<string> cmd_items;
+	int start_pos = 0;
+	for (int i = 0; i < cmd_str.length(); i++)
+	{
+		if (cmd_str[i] == '+')
+		{
+			cmd_items.push_back(cmd_str.substr(start_pos, i - start_pos));
+			start_pos = i + 1;
+		}
+	}
+	cmd_items.push_back(cmd_str.substr(start_pos));
+	return cmd_items;
+}
+
+
 int main()
 {
 	std::stringstream ss;
 	myLicense.readLicenceData(AllLicense);
 	myLicense.ShowLicenseInfo(AllLicense);
 	std::thread recvThread(&server::receieveFromClient, &myServer);
+	std::thread cmdThread(readcmd);//命令读取线程
 
 	while (true) {
 		if (!myServer.msgBuffer.empty()) {
@@ -525,7 +574,59 @@ int main()
 			updateLicence(updateBuffer.front());
 			updateBuffer.pop();
 		}
+
+		if (!cmdQueue.empty())
+		{
+			while (!cmdQueue.empty())
+			{
+				string cmd_str = cmdQueue.front();
+				cmdQueue.pop();
+				vector<string> cmd_items = getCmdItems(cmd_str);
+				string cmd_type = cmd_items[0];
+				if (cmd_type == "DRP")
+				{
+					//下线某用户，建议实现方法是返回一个forbid信息，就和登陆请求是一样的，然后客户端收到以后下线
+					string company = cmd_items[1];
+					string seqNum = cmd_items[2];
+					string ip = cmd_items[3];
+					string port = cmd_items[4];
+					SOCKADDR_IN addr;
+					addr.sin_port = htons(atoi(port.c_str()));
+					addr.sin_addr.s_addr = inet_addr(ip.c_str());
+					addr.sin_family = AF_INET;
+					myServer.sendToClient(&addr,"forbid");
+					std::thread* tr = clientInfo.at(addr).corrThread;
+					DWORD tid = GetThreadId(tr->native_handle());
+					while (!PostThreadMessage(tid, WM_QUIT, 0, 0));
+					updateBuffer.push(updateTuple(addr, false));
+				}
+				else if (cmd_type == "UBN")
+				{
+					//解禁某IP
+					string ip = cmd_items[1];
+					ofstream out(ForbidFILEPATH,ios::out);
+					for (auto it = forbiddenIPs.begin(); it != forbiddenIPs.end(); it++) {
+						if (*it != ip)
+							out << ip << endl;
+						else continue;
+					}
+				}
+				else if (cmd_type == "BAN")
+				{
+					//封禁某IP
+					string ip = cmd_items[1];
+					forbiddenIPs.push_back(ip);
+					ofstream out(ForbidFILEPATH, ios::app);
+					out << ip << endl;
+				}
+				else
+				{
+					cout << "bug,check your file" << endl;
+				}
+			}
+		}
 	}
 	recvThread.join();
+	cmdThread.join();
 	return 0;
 }
